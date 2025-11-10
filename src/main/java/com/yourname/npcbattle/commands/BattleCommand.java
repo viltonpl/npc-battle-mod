@@ -140,22 +140,6 @@ public class BattleCommand {
             npc.setCustomName(Text.literal(displayName));
             npc.setCustomNameVisible(true);
             
-            // Tenta carregar o preset do NPC
-            String presetId = "cobblemon:" + npcName.toLowerCase();
-            
-            // IMPORTANTE: Você precisa ter os arquivos de preset do Cobblemon
-            // em data/cobblemon/npc_presets/standard.json, sacchi.json, etc.
-            try {
-                // Usa o método do Cobblemon para carregar o preset
-                npc.setAspects(java.util.Set.of(npcName.toLowerCase()));
-            } catch (Exception e) {
-                player.sendMessage(
-                    Text.literal("⚠ Aviso: Preset '" + npcName + "' não encontrado. Usando NPC padrão.")
-                        .formatted(Formatting.YELLOW),
-                    false
-                );
-            }
-            
             // Spawna o NPC no mundo
             boolean spawned = player.getWorld().spawnEntity(npc);
             
