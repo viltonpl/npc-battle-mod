@@ -8,6 +8,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -15,12 +16,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class BattleCommand {
     
     // Lista de NPCs disponíveis (pode ser expandida)
-    private static final List<String> AVAILABLE_NPCS = List.of(
+    private static final List<String> AVAILABLE_NPCS = Arrays.asList(
         "standard",
         "sacchi",
         "ai_test"
@@ -71,7 +73,7 @@ public class BattleCommand {
 
         // Verifica se o jogador tem Pokémon
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
-        if (party.isEmpty()) {
+        if (party == null || party.toGappyList().isEmpty()) {
             player.sendMessage(
                 Text.literal("❌ Você precisa ter pelo menos um Pokémon para batalhar!")
                     .formatted(Formatting.RED),
@@ -130,7 +132,7 @@ public class BattleCommand {
             npc.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
             
             // Faz o NPC olhar para o jogador
-            npc.lookAt(net.minecraft.entity.EntityAnchorArgumentType.EntityAnchor.EYES, player.getPos());
+            npc.lookAt(EntityAnchorArgumentType.EntityAnchor.EYES, player.getPos());
             
             // Carrega o preset do NPC baseado no nome
             String presetId = "cobblemon:" + npcName.toLowerCase();
