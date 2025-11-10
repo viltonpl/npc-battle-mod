@@ -31,6 +31,9 @@ dependencies {
     
     // Cobblemon dependency
     modImplementation "com.cobblemon:fabric:${project.cobblemon_version}"
+    
+    // Kotlin standard library (required by Cobblemon)
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
 }
 
 processResources {
