@@ -82,31 +82,29 @@ public class BattleCommand {
             return 0;
         }
 
-        // Cria e spawna o NPC diretamente
+        // Tenta spawnar e iniciar batalha com o NPC
         try {
-            NPCEntity npc = spawnTrainerNPC(player, npcName);
+            boolean success = spawnAndBattleNPC(player, npcName);
             
-            if (npc == null) {
+            if (success) {
                 player.sendMessage(
-                    Text.literal("❌ Erro ao criar o treinador NPC!")
+                    Text.literal("⚔ Iniciando batalha com treinador ")
+                        .append(Text.literal(npcName).formatted(Formatting.GREEN, Formatting.BOLD))
+                        .append(Text.literal("!"))
+                        .formatted(Formatting.GOLD),
+                    false
+                );
+                return 1;
+            } else {
+                player.sendMessage(
+                    Text.literal("❌ Não foi possível iniciar a batalha. Verifique se o preset '")
+                        .append(Text.literal(npcName).formatted(Formatting.YELLOW))
+                        .append(Text.literal("' existe no Cobblemon."))
                         .formatted(Formatting.RED),
                     false
                 );
                 return 0;
             }
-            
-            // Inicia a batalha imediatamente
-            npc.interact(player, player.getActiveHand());
-            
-            player.sendMessage(
-                Text.literal("⚔ Batalha iniciada com ")
-                    .append(Text.literal(npc.getName().getString()).formatted(Formatting.GREEN, Formatting.BOLD))
-                    .append(Text.literal("!"))
-                    .formatted(Formatting.GOLD),
-                false
-            );
-            
-            return 1;
             
         } catch (Exception e) {
             player.sendMessage(
@@ -119,7 +117,7 @@ public class BattleCommand {
         }
     }
 
-    private static NPCEntity spawnTrainerNPC(ServerPlayerEntity player, String npcName) {
+    private static boolean spawnAndBattleNPC(ServerPlayerEntity player, String npcName) {
         try {
             // Cria a entidade NPC
             NPCEntity npc = new NPCEntity(player.getWorld());
@@ -129,17 +127,8 @@ public class BattleCommand {
             Vec3d playerLook = player.getRotationVector();
             Vec3d spawnPos = playerPos.add(playerLook.multiply(3.0));
             
-            npc.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
-            
-            // Faz o NPC olhar para o jogador
-            npc.lookAt(EntityAnchorArgumentType.EntityAnchor.EYES, player.getPos());
-            
-            // Carrega o preset do NPC baseado no nome
-            String presetId = "cobblemon:" + npcName.toLowerCase();
-            
-            // Tenta carregar o preset do Cobblemon
-            // NOTA: Você precisará ajustar isso baseado na API do Cobblemon
-            // Esta é uma implementação básica que pode precisar de ajustes
+            npc.refreshPositionAndAngles(spawnPos.x, spawnPos.y, spawnPos.z, 
+                player.getYaw() + 180.0f, 0.0f);
             
             // Define o nome customizado do NPC
             String displayName = switch (npcName.toLowerCase()) {
@@ -149,34 +138,65 @@ public class BattleCommand {
                 default -> "Treinador";
             };
             npc.setCustomName(Text.literal(displayName));
+            npc.setCustomNameVisible(true);
+            
+            // Tenta carregar o preset do NPC
+            String presetId = "cobblemon:" + npcName.toLowerCase();
+            
+            // IMPORTANTE: Você precisa ter os arquivos de preset do Cobblemon
+            // em data/cobblemon/npc_presets/standard.json, sacchi.json, etc.
+            try {
+                // Usa o método do Cobblemon para carregar o preset
+                npc.setAspects(java.util.Set.of(npcName.toLowerCase()));
+            } catch (Exception e) {
+                player.sendMessage(
+                    Text.literal("⚠ Aviso: Preset '" + npcName + "' não encontrado. Usando NPC padrão.")
+                        .formatted(Formatting.YELLOW),
+                    false
+                );
+            }
             
             // Spawna o NPC no mundo
-            player.getWorld().spawnEntity(npc);
+            boolean spawned = player.getWorld().spawnEntity(npc);
             
-            // Aguarda um tick para o NPC ser processado
-            // e depois remove ele (batalha temporária)
-            scheduleNPCRemoval(npc, 100); // Remove após 5 segundos (100 ticks)
+            if (!spawned) {
+                return false;
+            }
             
-            return npc;
+            // Agenda a interação com o NPC após 1 tick (50ms)
+            // Isso permite que o NPC seja processado antes da interação
+            player.getServer().execute(() -> {
+                if (npc != null && !npc.isRemoved()) {
+                    // Força a interação com o jogador (isso deve iniciar a batalha)
+                    npc.interactAt(player, player.getPos(), player.getActiveHand());
+                    
+                    // Agenda remoção do NPC após a batalha (200 ticks = 10 segundos)
+                    scheduleNPCRemoval(player.getServer(), npc, 200);
+                }
+            });
+            
+            return true;
             
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return false;
         }
     }
     
-    private static void scheduleNPCRemoval(NPCEntity npc, int ticks) {
-        // Remove o NPC após X ticks para não poluir o mundo
-        new Thread(() -> {
+    private static void scheduleNPCRemoval(net.minecraft.server.MinecraftServer server, NPCEntity npc, int ticks) {
+        // Agenda a remoção do NPC após X ticks
+        server.execute(() -> {
             try {
-                Thread.sleep(ticks * 50); // 50ms por tick
-                if (npc != null && !npc.isRemoved()) {
-                    npc.remove(net.minecraft.entity.Entity.RemovalReason.DISCARDED);
-                }
+                Thread.sleep(ticks * 50L); // 50ms por tick
+                server.execute(() -> {
+                    if (npc != null && !npc.isRemoved()) {
+                        npc.remove(net.minecraft.entity.Entity.RemovalReason.DISCARDED);
+                    }
+                });
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 
     private static void showHelp(ServerCommandSource source) {
