@@ -1,0 +1,31 @@
+# Build files
+.gradle/
+build/
+out/
+*.log
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+.classpath
+.project
+.settings/
+bin/
+
+# Fabric
+run/
+.fabric/
+remappedSrc/
+*.launch
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Minecraft
+crash-reports/
+logs/
+screenshots/
+saves/

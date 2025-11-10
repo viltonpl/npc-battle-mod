@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "npcbattle",
+  "version": "${version}",
+  "name": "NPC Battle Command",
+  "description": "Adiciona o comando /npcbattle para batalhar com NPCs treinadores do Cobblemon",
+  "authors": [
+    "SeuNome"
+  ],
+  "contact": {
+    "homepage": "https://github.com/seunome/npcbattle",
+    "sources": "https://github.com/seunome/npcbattle"
+  },
+  "license": "MIT",
+  "icon": "assets/npcbattle/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.yourname.npcbattle.NpcBattleCommandMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.5",
+    "fabric-api": "*",
+    "minecraft": ">=1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.6.1"
+  }
+}
